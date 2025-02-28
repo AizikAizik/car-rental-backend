@@ -41,7 +41,6 @@ public class UserService {
     return response;
   }
 
-
   public Map<String, Object> authenticateUser(User loginRequest) {
     Optional<User> user = Optional.ofNullable(userRepository.findByEmail(loginRequest.getEmail())
             .orElseThrow(() -> new ResourceNotFoundException("User not found")));
@@ -56,5 +55,9 @@ public class UserService {
     }
 
     throw new RuntimeException("Invalid email or password");
+  }
+
+  public User getUserByEmail(String email) {
+    return userRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("User not found"));
   }
 }
