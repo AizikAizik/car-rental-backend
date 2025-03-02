@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
 
   // Check if the application is in development mode
   private boolean isDevelopmentMode() {
-    String activeProfile = env.getProperty("spring.profiles.active", "development");
+    String activeProfile = env.getProperty("spring.profiles.active", "production");
     return "development".equals(activeProfile);
   }
 }
