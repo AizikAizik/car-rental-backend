@@ -81,5 +81,12 @@ public class BookingService {
     return bookingRepository.findByStartDateBetween(from, to);
   }
 
+  public boolean isBookingAmountExact(String bookingId, long amount){
+    Booking booking = bookingRepository.findById(bookingId)
+            .orElseThrow(() -> new ResourceNotFoundException("booking Id:" + bookingId+ " not found"));
+
+    return booking.getPriceOfBooking() == amount;
+  }
+
 }
 
