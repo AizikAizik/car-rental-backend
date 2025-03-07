@@ -5,7 +5,6 @@ import com.example.demo.service.BookingService;
 import com.example.demo.service.PaymentService;
 import com.stripe.exception.StripeException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -18,15 +17,14 @@ import java.util.Map;
 @Slf4j
 public class PaymentController {
 
-  @Autowired
-  private BookingService bookingService;
-
+  private final BookingService bookingService;
   private final PaymentService paymentService;
   private final JwtUtil jwtUtil;
 
-  public PaymentController(PaymentService paymentService, JwtUtil jwtUtil) {
+  public PaymentController(PaymentService paymentService, BookingService bookingService, JwtUtil jwtUtil) {
     this.paymentService = paymentService;
     this.jwtUtil = jwtUtil;
+    this.bookingService = bookingService;
   }
 
   @PostMapping("/create")
