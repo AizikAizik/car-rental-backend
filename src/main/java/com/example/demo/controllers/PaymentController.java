@@ -5,6 +5,7 @@ import com.example.demo.service.BookingService;
 import com.example.demo.service.PaymentService;
 import com.stripe.exception.StripeException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -48,6 +49,8 @@ public class PaymentController {
       return ResponseEntity.ok(response);
     } catch (StripeException e) {
       return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    } catch (RuntimeException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Invalid token"));
     }
   }
 }

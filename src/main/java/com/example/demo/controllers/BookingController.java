@@ -5,6 +5,7 @@ import com.example.demo.model.BookingStatus;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.service.BookingService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,47 +25,74 @@ public class BookingController {
     this.jwtUtil = jwtUtil;
   }
 
-  // ✅ Create a new booking
+  private String extractEmailFromToken(String token) {
+    if (token == null || !token.startsWith("Bearer ")) {
+      throw new IllegalArgumentException("Invalid or missing Authorization header");
+    }
+    try {
+      return jwtUtil.extractEmail(token.replace("Bearer ", ""));
+    } catch (RuntimeException e) {
+      throw new IllegalArgumentException("Invalid token: " + e.getMessage());
+    }
+  }
+
   @PostMapping
   @PreAuthorize("hasAuthority('ROLE_USER')")
   public ResponseEntity<?> createBooking(@RequestHeader("Authorization") String token, @Valid @RequestBody Booking booking) {
-    String userEmail = jwtUtil.extractEmail(token.replace("Bearer ", ""));
-    Booking savedBooking = bookingService.createBooking(userEmail, booking.getCarId(), booking);
-    return ResponseEntity.ok(savedBooking);
+    try {
+      String userEmail = extractEmailFromToken(token);
+      Booking savedBooking = bookingService.createBooking(userEmail, booking.getCarId(), booking);
+      return ResponseEntity.ok(savedBooking);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+    }
   }
 
-  // ✅ Get all bookings for the logged-in user
   @GetMapping("/user")
   @PreAuthorize("hasAuthority('ROLE_USER')")
-  public ResponseEntity<List<Booking>> getUserBookings(@RequestHeader("Authorization") String token) {
-    String userEmail = jwtUtil.extractEmail(token.replace("Bearer ", ""));
-    List<Booking> bookings = bookingService.getBookingsByUser(userEmail);
-    return ResponseEntity.ok(bookings);
+  public ResponseEntity<?> getUserBookings(@RequestHeader("Authorization") String token) {
+    try {
+      String userEmail = extractEmailFromToken(token);
+      List<Booking> bookings = bookingService.getBookingsByUser(userEmail);
+      return ResponseEntity.ok(bookings);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+    }
   }
 
-  // ✅ Confirm a booking after successful payment
   @PutMapping("/{bookingId}/confirm")
   @PreAuthorize("hasAuthority('ROLE_USER')")
-  public ResponseEntity<Booking> confirmBooking(@PathVariable String bookingId) {
-    Booking updatedBooking = bookingService.updateBookingStatus(bookingId, BookingStatus.CONFIRMED);
-    return ResponseEntity.ok(updatedBooking);
+  public ResponseEntity<?> confirmBooking(@PathVariable String bookingId, @RequestHeader("Authorization") String token) {
+    try {
+      extractEmailFromToken(token); // Validate token, even if not used directly
+      Booking updatedBooking = bookingService.updateBookingStatus(bookingId, BookingStatus.CONFIRMED);
+      return ResponseEntity.ok(updatedBooking);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+    }
   }
 
-  // ✅ Cancel a booking
   @PutMapping("/{bookingId}/cancel")
   @PreAuthorize("hasAuthority('ROLE_USER')")
-  public ResponseEntity<Booking> cancelBooking(@PathVariable String bookingId) {
-    Booking updatedBooking = bookingService.updateBookingStatus(bookingId, BookingStatus.CANCELLED);
-    return ResponseEntity.ok(updatedBooking);
+  public ResponseEntity<?> cancelBooking(@PathVariable String bookingId, @RequestHeader("Authorization") String token) {
+    try {
+      extractEmailFromToken(token); // Validate token, even if not used directly
+      Booking updatedBooking = bookingService.updateBookingStatus(bookingId, BookingStatus.CANCELLED);
+      return ResponseEntity.ok(updatedBooking);
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+    }
   }
 
-  // ✅ Delete a booking (Only if user owns it)
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('ROLE_USER')")
-  public ResponseEntity<Map<String, String>> deleteBooking(@PathVariable String id, @RequestHeader("Authorization") String token) {
-    String userEmail = jwtUtil.extractEmail(token.replace("Bearer ", ""));
-    bookingService.deleteBooking(id, userEmail);
-    return ResponseEntity.ok(Map.of("message", "Booking deleted successfully"));
+  public ResponseEntity<?> deleteBooking(@PathVariable String id, @RequestHeader("Authorization") String token) {
+    try {
+      String userEmail = extractEmailFromToken(token);
+      bookingService.deleteBooking(id, userEmail);
+      return ResponseEntity.ok(Map.of("message", "Booking deleted successfully"));
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", e.getMessage()));
+    }
   }
 }
-

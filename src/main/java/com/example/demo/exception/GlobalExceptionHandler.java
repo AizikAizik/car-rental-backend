@@ -4,6 +4,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -30,6 +31,12 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<Map<String, Object>> handleResourceNotFoundException(ResourceNotFoundException ex) {
     return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+  }
+
+  // Handle Missing Request Headers exception
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<Map<String, Object>> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
   }
 
   // Handle validation errors (e.g., missing fields in request body)
