@@ -33,6 +33,11 @@ public class GlobalExceptionHandler {
     return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
   }
 
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<Map<String, Object>> handleAuthenticationException(AuthenticationException ex){
+    return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+  }
+
   // Handle Missing Request Headers exception
   @ExceptionHandler(MissingRequestHeaderException.class)
   public ResponseEntity<Map<String, Object>> handleMissingRequestHeaderException(MissingRequestHeaderException ex) {

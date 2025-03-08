@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.exception.AuthenticationException;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
@@ -54,7 +55,7 @@ public class UserService {
       return response;
     }
 
-    throw new RuntimeException("Invalid email or password");
+    throw new AuthenticationException("Invalid email or password");
   }
 
   public User getUserByEmail(String email) {

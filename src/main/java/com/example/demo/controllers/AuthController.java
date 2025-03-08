@@ -1,5 +1,6 @@
 package com.example.demo.controllers;
 
+import com.example.demo.exception.AuthenticationException;
 import com.example.demo.model.User;
 import com.example.demo.service.UserService;
 import jakarta.validation.Valid;
@@ -30,7 +31,12 @@ public class AuthController {
 
   @PostMapping("/login")
   public ResponseEntity<Map<String, Object>> login(@RequestBody User loginRequest) {
-    Map<String, Object> response = userService.authenticateUser(loginRequest);
-    return ResponseEntity.ok(response);  // Return the response with status 200 OK
+    try{
+      Map<String, Object> response = userService.authenticateUser(loginRequest);
+      return ResponseEntity.ok(response);  // Return the response with status 200 OK
+    } catch (AuthenticationException e){
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+    }
+
   }
 }
