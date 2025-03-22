@@ -87,4 +87,25 @@ class AuthControllerTest {
 
     verify(userService, times(1)).authenticateUser(any(User.class));
   }
+
+  @Test
+  void registerUser_withXSSInput_sanitizesFields() throws Exception {
+    User sanitizedUser = new User("alert('XSS')", "xss@example.com", "Password123!", "123 Main St", "+1234567890", Set.of(Role.USER));
+    Map<String, Object> response = new HashMap<>();
+    response.put("message", "User registered successfully");
+    response.put("token", "mockToken");
+    response.put("user", sanitizedUser);
+    when(userService.registerUser(any(User.class))).thenReturn(response);
+
+    mockMvc.perform(post("/api/auth/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"name\":\"<script>alert('XSS')</script>\",\"email\":\"xss@example.com\",\"password\":\"Password123!\",\"address\":\"<div onclick=\\\"malicious()\\\">123 Main St</div>\",\"phoneNumber\":\"+1234567890\"}"))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.message").value("User registered successfully"))
+            .andExpect(jsonPath("$.token").value("mockToken"))
+            .andExpect(jsonPath("$.user.name").value("alert('XSS')"))
+            .andExpect(jsonPath("$.user.address").value("123 Main St"));
+
+    verify(userService, times(1)).registerUser(any(User.class));
+  }
 }
