@@ -29,6 +29,7 @@ public class UserService {
   @Autowired
   private PasswordEncoder passwordEncoder;
 
+  // TODO: Consider allowing safe HTML elements (e.g., <b>) if needed in the future
   private static final PolicyFactory SANITIZER = new HtmlPolicyBuilder()
           .allowWithoutAttributes() // Allow no elements with attributes
           .disallowElements("script", "div", "a", "img", "style", "p") // Disallow all HTML elements
