@@ -128,4 +128,58 @@ class UserServiceTest {
     assertEquals("User not found", exception.getMessage());
     verify(userRepository, times(1)).findByEmail("john@example.com");
   }
+
+  @Test
+  void registerUser_withXSSInput_sanitizesFields() {
+    // Create a user with XSS input in name and address
+    User xssUser = new User(
+            "<script>alert('XSS')</script>",
+            "xss@example.com",
+            "Password123!",
+            "<div onclick=\"malicious()\">123 Main St</div>",
+            "+1234567890",
+            Set.of(Role.USER)
+    );
+
+    when(passwordEncoder.encode("Password123!")).thenReturn("hashedPassword");
+    when(userRepository.save(any(User.class))).thenReturn(xssUser);
+    when(jwtUtil.generateToken("xss@example.com")).thenReturn("mockToken");
+
+    Map<String, Object> response = userService.registerUser(xssUser);
+
+    // Verify that the name and address were sanitized
+    assertEquals("alert(&#39;XSS&#39;)", xssUser.getName()); // Script tags removed
+    assertEquals("123 Main St", xssUser.getAddress()); // HTML tags removed
+    assertEquals("User registered successfully", response.get("message"));
+    assertEquals("mockToken", response.get("token"));
+    verify(userRepository, times(1)).save(xssUser);
+    verify(jwtUtil, times(1)).generateToken("xss@example.com");
+  }
+
+  @Test
+  void registerUser_withSafeInput_preservesFields() {
+    User safeUser = new User(
+            "John Doe",
+            "safe@example.com",
+            "Password123!",
+            "123 Main St",
+            "+1234567890",
+            Set.of(Role.USER)
+    );
+
+    when(passwordEncoder.encode("Password123!")).thenReturn("hashedPassword");
+    when(userRepository.save(any(User.class))).thenReturn(safeUser);
+    when(jwtUtil.generateToken("safe@example.com")).thenReturn("mockToken");
+
+    Map<String, Object> response = userService.registerUser(safeUser);
+
+    // Verify that safe input is unchanged
+    assertEquals("John Doe", safeUser.getName());
+    assertEquals("123 Main St", safeUser.getAddress());
+    assertEquals("User registered successfully", response.get("message"));
+    assertEquals("mockToken", response.get("token"));
+    verify(userRepository, times(1)).save(safeUser);
+    verify(jwtUtil, times(1)).generateToken("safe@example.com");
+  }
+
 }

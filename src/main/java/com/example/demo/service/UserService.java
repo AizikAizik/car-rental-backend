@@ -5,6 +5,8 @@ import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtUtil;
+import org.owasp.html.HtmlPolicyBuilder;
+import org.owasp.html.PolicyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class UserService {
@@ -25,7 +29,39 @@ public class UserService {
   @Autowired
   private PasswordEncoder passwordEncoder;
 
+  // TODO: Consider allowing safe HTML elements (e.g., <b>) if needed in the future
+  private static final PolicyFactory SANITIZER = new HtmlPolicyBuilder()
+          .allowWithoutAttributes() // Allow no elements with attributes
+          .disallowElements("script", "div", "a", "img", "style", "p") // Disallow all HTML elements
+          .disallowAttributes("on.*")
+          .globally().toFactory();
+
+  // Regex to remove <script> tags and extract their content
+  private static final Pattern SCRIPT_TAG_PATTERN = Pattern.compile("<script[^>]*>(.*?)</script>", Pattern.DOTALL);
+
+  private String preprocessScriptTags(String input) {
+    if (input == null) {
+      return null;
+    }
+    Matcher matcher = SCRIPT_TAG_PATTERN.matcher(input);
+    String result = input;
+    while (matcher.find()) {
+      String scriptContent = matcher.group(1); // Extract content inside <script> tags
+      result = matcher.replaceFirst(scriptContent != null ? scriptContent : "");
+      matcher = SCRIPT_TAG_PATTERN.matcher(result); // Reapply to handle multiple script tags
+    }
+    return result;
+  }
+
   public Map<String, Object> registerUser(User user) {
+    // Preprocess fields to handle <script> tags
+    String preprocessedName = preprocessScriptTags(user.getName());
+    String preprocessedAddress = preprocessScriptTags(user.getAddress());
+
+    // Sanitize fields that could contain HTML
+    user.setName(SANITIZER.sanitize(preprocessedName));
+    user.setAddress(SANITIZER.sanitize(preprocessedAddress));
+
     // Hash password and save user
     user.setPassword(passwordEncoder.encode(user.getPassword()));
     userRepository.save(user);
